@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: articlefilter-app
     ports:
-      - "3000:3000" # Пробрасываем порт для Node.js
+      - "3000:3000" 
     environment:
       - PORT=3000
       - DB_HOST=db
@@ -15,6 +15,9 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=1237admin_access
       - DB_NAME=articles_db
+      # true - delete old database tables when restart docker
+      - DB_FORCE_SYNC=true 
+   
     depends_on:
       - db
     networks:
@@ -24,7 +27,7 @@ services:
     image: postgres:15
     container_name: articlefilter-db
     ports:
-      - "5433:5432" # Пробрасываем порт PostgreSQL
+      - "5433:5432" 
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1237admin_access

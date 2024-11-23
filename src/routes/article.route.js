@@ -5,6 +5,28 @@ const router = express.Router();
 /**
  * @swagger
  * /articles:
+ *   get:
+ *     summary: Retrieve a list of articles
+ *     description: Get all articles with optional filters or sorting.
+ *     tags:
+ *       - Articles
+ *     responses:
+ *       200:
+ *         description: A list of articles.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Article'
+ *       500:
+ *         description: Internal server error.
+ */
+router.get("/", getArticles);
+
+/**
+ * @swagger
+ * /articles:
  *   post:
  *     summary: Add a new article
  *     description: Create a new article with the given details.
@@ -57,8 +79,7 @@ const router = express.Router();
  *       500:
  *         description: Internal server error.
  */
-
-router.get("/", getArticles);
+router.post("/", addArticle);
 
 /**
  * @swagger
@@ -84,10 +105,6 @@ router.get("/", getArticles);
  *       500:
  *         description: Internal server error.
  */
-
-router.post("/", addArticle);
-
-// Удалить статью
 router.delete("/:id", deleteArticle);
 
 module.exports = router;
