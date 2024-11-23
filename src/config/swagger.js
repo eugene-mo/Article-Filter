@@ -47,6 +47,32 @@ const swaggerOptions = {
             },
           },
         },
+        Tag: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              description: "The ID of the tag",
+            },
+            name: {
+              type: "string",
+              description: "The name of the tag",
+            },
+          },
+        },
+        Status: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              description: "The ID of the status",
+            },
+            name: {
+              type: "string",
+              description: "The name of the status",
+            },
+          },
+        },
       },
     },
   },

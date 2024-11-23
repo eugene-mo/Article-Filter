@@ -1,23 +1,16 @@
 const { Op } = require("sequelize");
 const Article = require("../models/article.model");
-const Tag = require("../models/tag.model");
-const Status = require("../models/status.model");
+const cacheService = require("../services/cache.service");
 
 async function getArticles(req, res) {
   try {
     const { title, author, tags, status, dateRange, minViews, maxViews, sortBy = "createdAt", sortOrder = "DESC", page = 1, limit = 10 } = req.query;
 
     const offset = (page - 1) * limit;
-
-    // фильтрация по полям
     const where = {};
 
-    if (title) {
-      where.title = { [Op.iLike]: `%${title}%` };
-    }
-    if (author) {
-      where.author = { [Op.iLike]: `%${author}%` };
-    }
+    if (title) where.title = { [Op.iLike]: `%${title}%` };
+    if (author) where.author = { [Op.iLike]: `%${author}%` };
     if (minViews || maxViews) {
       where.views = {
         ...(minViews && { [Op.gte]: +minViews }),
@@ -32,33 +25,26 @@ async function getArticles(req, res) {
       };
     }
 
-    // параметры сортировки
+    // Sorting parameters
     const order = [[sortBy, sortOrder.toUpperCase()]];
 
-    // Получаем все доступные статусы и теги из базы данных
-    const [availableTags, availableStatuses] = await Promise.all([
-      Tag.findAll({ attributes: ["name"] }), // Получаем все теги
-      Status.findAll({ attributes: ["name"] }), // Получаем все статусы
-    ]);
+    // Get tags and statuses from cache
+    const availableTagNames = cacheService.getTags();
+    const availableStatusNames = cacheService.getStatuses();
 
-    const availableTagNames = availableTags.map((tag) => tag.name); // Массив доступных тегов
-    const availableStatusNames = availableStatuses.map((status) => status.name); // Массив доступных статусов
-
-    // Проверка наличия переданных тегов в базе данных
+    // Tags filtering
     const filterTags = tags ? tags.split(",").filter((tag) => availableTagNames.includes(tag)) : [];
-
-    // Проверка наличия переданного статуса в базе данных
     const filterStatus = status && availableStatusNames.includes(status) ? status : null;
 
-    // фильтрация по тегам и статусу
+    // Check if need require statuses and tags to search
     const include = [
       {
-        model: Tag,
+        model: require("../models/tag.model"),
         where: filterTags.length > 0 ? { name: { [Op.in]: filterTags } } : undefined,
         required: filterTags.length > 0,
       },
       {
-        model: Status,
+        model: require("../models/status.model"),
         where: filterStatus ? { name: filterStatus } : undefined,
         required: !!filterStatus,
       },
@@ -92,18 +78,22 @@ const addArticle = async (req, res) => {
       return res.status(400).json({ error: 'Fields "title", "author", and "status" are required.' });
     }
 
-    // Получаем все доступные статусы из базы данных
-    const availableStatuses = await Status.findAll({ attributes: ["name"] });
-
-    const validStatuses = availableStatuses.map((status) => status.name); // Массив доступных статусов
+    // check statuses from cache
+    const validStatuses = cacheService.getStatuses();
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: `Invalid status. Valid values are: ${validStatuses.join(", ")}` });
+      return res.status(400).json({
+        error: `Invalid status. Valid values are: ${validStatuses.join(", ")}`,
+      });
     }
+
+    //check tags from cache
+    const availableTags = cacheService.getTags();
+    const validTags = tags ? tags.filter((tag) => availableTags.includes(tag)) : [];
 
     const article = await Article.create({
       title,
       author,
-      tags: tags || [],
+      tags: validTags,
       createdAt: createdAt || new Date(),
       status,
       views: views || 0,
@@ -111,6 +101,7 @@ const addArticle = async (req, res) => {
 
     res.status(201).json(article);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -125,9 +116,9 @@ const deleteArticle = async (req, res) => {
     }
 
     await article.destroy();
-
     res.status(200).json({ message: "Article deleted successfully" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 };

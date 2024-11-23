@@ -1,13 +1,21 @@
-const { Model } = require("sequelize");
+const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
-const Article = require("./article.model");
-const Tag = require("./tag.model");
 
-class ArticleTag extends Model {}
-
-ArticleTag.init({}, { sequelize, modelName: "ArticleTag" });
-
-Article.belongsToMany(Tag, { through: ArticleTag });
-Tag.belongsToMany(Article, { through: ArticleTag });
+const ArticleTag = sequelize.define("ArticleTag", {
+  articleId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: "Articles",
+      key: "id",
+    },
+  },
+  tagId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: "Tags",
+      key: "id",
+    },
+  },
+});
 
 module.exports = ArticleTag;

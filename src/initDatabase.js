@@ -5,7 +5,7 @@ const Tag = require("./models/tag.model");
 async function initDatabase() {
   try {
     // delete or not old tables data every time when container restarts
-    const forceSync = process.env.DB_FORCE_;
+    const forceSync = process.env.DB_FORCE_SYNC;
     await sequelize.sync({ force: forceSync });
 
     console.log("Database synchronized.");
